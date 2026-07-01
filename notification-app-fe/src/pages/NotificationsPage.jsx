@@ -9,78 +9,126 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+
 import NotificationsIcon from "@mui/icons-material/Notifications";
 
 import { NotificationCard } from "../components/NotificationCard";
 import { NotificationFilter } from "../components/NotificationFilter";
 import { useNotifications } from "../hooks/useNotifications";
 
+const PAGE_SIZE = 10;
+
 export function NotificationsPage() {
-  const [filter, setFilter] = useState();
-  const [page, setPage] = useState("1");
+  const [filter, setFilter] = useState("All");
+  const [page, setPage] = useState(1);
 
-  const { notifications, totalPages, loading, error } = useNotifications();
+  const { notifications, loading, error } =
+    useNotifications();
 
-  const unreadCount = 2;
+  const filtered =
+    filter === "All"
+      ? notifications
+      : notifications.filter(
+          (n) => n.Type === filter
+        );
 
-  const handleFilterChange = (newFilter) => {
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filtered.length / PAGE_SIZE)
+  );
 
-  };
-
-  const handlePageChange = (_, newPage) => {
-
-  };
+  const pageData = filtered.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
 
   return (
-    <Box sx={{ maxWidth: 720, mx: "auto", px: 2, py: 4 }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
-        <Badge badgeContent={unreadCount} color="primary" max={99}>
-          <NotificationsIcon sx={{ fontSize: 28 }} />
+    <Box
+      sx={{
+        maxWidth: 750,
+        mx: "auto",
+        p: 4,
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        mb={3}
+      >
+        <Badge
+          badgeContent={filtered.length}
+          color="primary"
+        >
+          <NotificationsIcon />
         </Badge>
-        <Typography variant="h5" fontWeight={700}>
+
+        <Typography variant="h4">
           Notifications
         </Typography>
       </Stack>
 
       <Divider sx={{ mb: 3 }} />
 
-      <Box sx={{ marginBottom: 3 }}>
-        <NotificationFilter value={filter} onChange={handleFilterChange} />
-      </Box>
+      <NotificationFilter
+        value={filter}
+        onChange={(value) => {
+          setFilter(value);
+          setPage(1);
+        }}
+      />
 
-      {true && (
-        <Box display="flex" justifyContent="center" py={6}>
+      <Box mt={3} />
+
+      {loading && (
+        <Box
+          display="flex"
+          justifyContent="center"
+        >
           <CircularProgress />
         </Box>
       )}
 
-      {!loading && error && (
-        <Alert severity="error">Failed to load notifications: {error}</Alert>
+      {error && (
+        <Alert severity="error">
+          {error}
+        </Alert>
       )}
 
-      {loading && !error && notifications.length == "0" && (
-        <Alert severity="info">Something message</Alert>
-      )}
+      {!loading &&
+        !error &&
+        pageData.length === 0 && (
+          <Alert severity="info">
+            No notifications found.
+          </Alert>
+        )}
 
-      {loading && !error && notifications.length > 0 && (
-        <Stack spacing={1.5}>
-          {notifications.map((n) => (
-            <></>
-          ))}
-        </Stack>
-      )}
+      {!loading &&
+        !error &&
+        pageData.length > 0 && (
+          <Stack spacing={2}>
+            {pageData.map((notification) => (
+              <NotificationCard
+                key={notification.ID}
+                notification={notification}
+              />
+            ))}
+          </Stack>
+        )}
 
-      {!loading && (
-        <Box display="flex" justifyContent="center" mt={4}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={handlePageChange}
-            color="primary"
-            shape="rounded"
-          />
-        </Box>
-      )}
+      <Box
+        display="flex"
+        justifyContent="center"
+        mt={4}
+      >
+        <Pagination
+          page={page}
+          count={totalPages}
+          onChange={(e, value) =>
+            setPage(value)
+          }
+        />
+      </Box>
     </Box>
   );
 }
